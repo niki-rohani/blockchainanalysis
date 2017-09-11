@@ -5,3 +5,9 @@ numpy
 pandas
 quandl
 ipdb
+jupyter
+plotly
+matplotlib
+numpy
+tensorflow-gpu
+html5lib==0.999999999
