@@ -1,10 +1,12 @@
 from abc import abstractclassmethod
 import pickle as pkl
+import sys
+import os
 
 class Getter(object):
 
 
-    def get(self, market, crypto_name="BCHARTS", try_cache=True):
+    def get(self, market=None, crypto_name="BCHARTS", try_cache=True):
         """
         Abstract method for getting a crypto name historical data on a market
         :param crypto_name:
@@ -27,14 +29,17 @@ class Getter(object):
         pass
 
     def cache(self, df, market, crypto):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
         try:
-            pkl.dump(df, open("cache/"+market+crypto+".pkl", "wb"))
+            pkl.dump(df, open(dir_path+"/cache/"+market or self.market+crypto+".pkl", "wb"))
         except:
-            raise ("Error on saving " + market+crypto)
+            raise Exception("Error on saving " + dir_path+"/cache/"+market or self.market+crypto+".pkl")
 
     def uncache(self, market, crypto):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
         try:
-            df=pkl.load(open("cache/"+market+crypto+".pkl"), "rb")
+            df=pkl.load(open(dir_path+"cache/"+market or self.market+crypto+".pkl"), "rb")
             return df
         except:
-            raise ("Error on loading " + market+crypto)
+            raise Exception("Error on loading " + sys.modules[__name__].__file__+"/cache/"+market
+                            or self.market+crypto+".pkl")
