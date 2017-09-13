@@ -38,7 +38,7 @@ class Getter(object):
     def uncache(self, market, crypto):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         try:
-            df=pkl.load(open(dir_path+"cache/"+market or self.market+crypto+".pkl"), "rb")
+            df=pkl.load(open(dir_path+"cache/"+market or self.market+crypto+".pkl", "rb"))
             return df
         except:
             raise Exception("Error on loading " + sys.modules[__name__].__file__+"/cache/"+market
