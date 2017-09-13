@@ -7,9 +7,9 @@ from tensorflow.contrib.learn.python.learn.ops import losses_ops
 from tensorflow.python.ops import variable_scope
 from tensorflow.python.summary import summary
 from blockchain.lib.nn import rnn
-from blockchain.lib.model import BaseModel
+from blockchain.lib.model.base_model import BaseModel
 
-class Seq2Seq(object):
+class Seq2Seq(BaseModel):
 
     def __init__(self, config):
         self.config = config
@@ -31,20 +31,23 @@ class Seq2Seq(object):
             # from (batch_size x len_sequence x dim_input) to (len_sequence x batch_size x dim_input)
             x_ = tf.unstack(X, axis=1, num=X.shape[1])
 
+
             # if we are in learning mode, y is not None
             if y is not None:
                 # We create the decoder inputs, that are the outputs shift by 1 in the right and adding in first
                 # the "GO" symbol.
-                decoder_inputs = [tf.fill(y[-1].get_shapes(), self.config["GO_SYMBOL"])]
-                for input in decoder_inputs:
-                    decoder_inputs.append(input)
                 y_ = tf.unstack(y, axis=1, num=y.shape[1])
-                decoder_inputs = tf.unstack(decoder_inputs, axis=1, num=decoder_inputs.shape[1])
+                decoder_inputs = [tf.fill(y[-1].get_shape(), self.config["GO_SYMBOL"])]
+                for input in y_[:-1]:
+                    decoder_inputs.append(input)
+
                 loop_fn = None
             else:
                 y_ = None
-                decoder_inputs = [tf.fill([None, self.config["y_window"],
+                decoder_inputs = [tf.fill([None,
                                            self.config["output_dim"]], self.config["GO_SYMBOL"])]
+
+            decoder_inputs = y_
 
             # We run the seq2seq
             self.output, self.layers = rnn.attention_rnn_seq2seq(x_, decoder_inputs, cell)
@@ -56,19 +59,14 @@ class Seq2Seq(object):
             with variable_scope.variable_scope('linear_regression'):
                 scope_name = variable_scope.get_variable_scope().name
                 dtype = self.output[0].dtype.base_dtype
-                output_shape = 1
+                output_shape = self.config["output_dim"]
                 weights = variable_scope.get_variable(
                     'weights', [self.output[0].get_shape()[1], output_shape], dtype=dtype)
                 bias = variable_scope.get_variable('bias', [output_shape], dtype=dtype)
 
                 if y is not None:
-                    # Set up the requested initialization.
-                    summary.histogram('%s.weights' % scope_name, weights)
-                    summary.histogram('%s.bias' % scope_name, bias)
 
                     for output, Y_ in zip(self.output, y_):
-                        summary.histogram('%s.x_%s' % (scope_name, str(i)), output)
-                        summary.histogram('%s.y_%s' % (scope_name, str(i)), Y_)
                         prediction, l_ = losses_ops.mean_squared_error_regressor(output, Y_, weights, bias)
                         output_.append(prediction)
                         i+=1
