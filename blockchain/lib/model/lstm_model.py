@@ -4,14 +4,20 @@ from tensorflow.python.framework import dtypes
 from tensorflow.contrib import learn as tflearn
 from tensorflow.contrib import layers as tflayers
 from blockchain.lib.data.dataset import Dataset
+from blockchain.lib.nn import rnn
+from blockchain.lib.model import BaseModel
 
-
-class LSTMModel(object):
+class LSTMModel(BaseModel):
 
     def __init__(self, config):
         self.config = config
+        self.model = tflearn.SKCompat(tflearn.Estimator(
+            model_fn=self._model(),
+            model_dir=self.config["log_dir"]
+        ))
 
-    def lstm_model(self):
+
+    def _model(self):
         num_units = self.config["num_unit"]
         rnn_layers = self.config["rnn_layers"]
         dense_layers = self.config["dense_layers"]
@@ -30,20 +36,6 @@ class LSTMModel(object):
         :return: the model definition
         """
 
-        def lstm_cells(layers):
-            if isinstance(layers[0], dict):
-                return [tf.contrib.rnn.DropoutWrapper(
-                    tf.contrib.rnn.BasicLSTMCell(
-                        layer['num_units'], state_is_tuple=True
-                    ),
-                    layer['keep_prob']
-                ) if layer.get('keep_prob') else tf.contrib.rnn.BasicLSTMCell(
-                    layer['num_units'],
-                    state_is_tuple=True
-                ) for layer in layers
-                        ]
-            return [tf.contrib.rnn.BasicLSTMCell(steps, state_is_tuple=True) for steps in layers]
-
         def dnn_layers(input_layers, layers):
             if layers and isinstance(layers, dict):
                 return tflayers.stack(input_layers, tflayers.fully_connected,
@@ -56,7 +48,7 @@ class LSTMModel(object):
                 return input_layers
 
         def _lstm_model(X, y):
-            stacked_lstm = tf.contrib.rnn.MultiRNNCell(lstm_cells(rnn_layers), state_is_tuple=True)
+            stacked_lstm = tf.contrib.rnn.MultiRNNCell(rnn.lstm_cells(rnn_layers), state_is_tuple=True)
             x_ = tf.unstack(X, axis=1, num=num_units)
             output, layers = tf.contrib.rnn.static_rnn(stacked_lstm, x_, dtype=dtypes.float32)
             output = dnn_layers(output[-1], dense_layers)
@@ -73,13 +65,12 @@ class LSTMModel(object):
                                              self.config["label"],
                                              self.config["len_sequence"],
                                              ratio=self.config["ratio_train_val_test"])
-        regressor = tflearn.SKCompat(tflearn.Estimator(
-            model_fn=self.lstm_model(),
-            model_dir=self.config["log_dir"]
-        ))
         validation_monitor = tflearn.monitors.ValidationMonitor(x['val'], y['val'],
                                                               every_n_steps=self.config["print_step"],
                                                               early_stopping_rounds=self.config["early_stopping"])
-        regressor.fit(x["train"], y["train"],
+        self.model.fit(x["train"], y["train"],
                       monitors=[validation_monitor],
                       batch_size=self.config["batch_size"])
+
+    def predict(self, x):
+        pass
