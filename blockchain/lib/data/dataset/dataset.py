@@ -18,12 +18,15 @@ class Dataset(object):
         df = pd.concat([x, y], axis=1, join="inner")
 
         N = df["y"].shape[0]
-        x = np.array([np.array(df[x_column])[b:b+lookback_len].astype(np.float32)
-                      for b in range(0, N - lookback_len)])
+
         if y_window > 1:
-            y = np.array([np.array(df["y"]).astype(np.float32)[b:b+y_window]
-                          for b in range(lookback_len, N-y_window+1)])
+            x = np.array([np.array(df[x_column])[b:b + lookback_len].astype(np.float32)
+                          for b in range(0, N - lookback_len - y_window)])
+            y = np.array([np.array(df[["y"]])[b:b+y_window].astype(np.float32)
+                          for b in range(lookback_len, N - y_window)])
         else:
+            x = np.array([np.array(df[x_column])[b:b + lookback_len].astype(np.float32)
+                          for b in range(0, N - lookback_len)])
             y = np.array([np.array(df["y"]).astype(np.float32)[b]
                           for b in range(lookback_len, N)])
 
@@ -34,7 +37,7 @@ class Dataset(object):
             ntest = int(round(len(data) * (1 - test_size)))
             nval = int(round(len(data[:ntest]) * (1 - val_size)))
 
-            idx_split = [i for i in range(data.shape[0])]
+            idx_split = [i for i in range(len(data))]
             if shuffle:
                 np.random.shuffle(idx_split)
             train, val, test = idx_split[:nval], idx_split[nval:ntest], idx_split[ntest:]
