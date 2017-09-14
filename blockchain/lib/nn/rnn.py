@@ -25,7 +25,8 @@ def attention_rnn_seq2seq(encoder_inputs,
                           decoder_inputs,
                           cell,
                           dtype=dtypes.float32,
-                          scope=None):
+                          scope=None,
+                          loop_function=None):
     """Basic RNN sequence-to-sequence model.
 
     This model first runs an RNN to encode encoder_inputs into a state vector,
@@ -57,4 +58,4 @@ def attention_rnn_seq2seq(encoder_inputs,
 
         attention_states = seq2seq.array_ops.concat(top_states, 1)
 
-        return seq2seq.attention_decoder(decoder_inputs, enc_state, attention_states, cell)
+        return seq2seq.attention_decoder(decoder_inputs, enc_state, attention_states, cell, loop_function=loop_function)
