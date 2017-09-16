@@ -5,6 +5,8 @@ from tensorflow.contrib.learn.python.learn.ops import losses_ops
 from tensorflow.python.ops import variable_scope
 from blockchain.lib.nn import rnn
 from blockchain.lib.model.base_model import BaseModel
+import numpy as np
+from blockchain.lib.nn.losses import losses
 
 class Seq2Seq(BaseModel):
 
@@ -59,8 +61,6 @@ class Seq2Seq(BaseModel):
                                   for i in range(self.config["y_window"])]
                 def loop_fn(prev, i):
                     predictions = tf.nn.xw_plus_b(prev, self.weights, self.bias)
-                  #  if len(predictions.get_shape()) == 2:
-                  #      predictions = seq2seq.array_ops.squeeze(predictions, squeeze_dims=[1])
                     return predictions
 
 
@@ -80,11 +80,8 @@ class Seq2Seq(BaseModel):
                 if mode != tf.contrib.learn.ModeKeys.INFER:
                     for output, Y_ in zip(self.output, y_):
                         predictions = tf.nn.xw_plus_b(output, self.weights, self.bias)
-                        # if len(predictions.get_shape()) == 2:
-                        #       predictions = seq2seq.array_ops.squeeze(predictions, squeeze_dims=[1])
-                        print(predictions)
-                        print(Y_)
-                        l_ = tf.losses.mean_squared_error(Y_, predictions)
+                        #l_ = tf.losses.mean_squared_error(Y_, predictions)
+                        l_ = losses.biased_mean_squared_error(Y_, predictions, self.config["bias_loss"])
                         output_.append(predictions)
                         loss += l_
 
@@ -125,4 +122,7 @@ class Seq2Seq(BaseModel):
 
 
     def predict(self, x):
-        return self.model.predict(x, batch_size=self.config["batch_size"])
+        pred = self.model.predict(x, batch_size=self.config["batch_size"]).T
+        if len(pred.shape) == 3:
+            return np.concatenate(pred)
+        return pred
