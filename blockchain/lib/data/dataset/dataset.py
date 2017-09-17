@@ -4,19 +4,23 @@ import numpy as np
 class Dataset(object):
 
     @staticmethod
-    def create_series_dataset(x, y, x_column, label, lookback_len=10, ratio=[0.2, 0.2], shuffle=False, y_window=1):
+    def create_series_dataset(data, x_column, label, lookback_len=10, ratio=[0.2, 0.2], shuffle=False, y_window=1,
+                              period=1):
         """
         Create a dataset from x and y
         :param x:
         :param y:
         :return:
         """
-        x = x[x_column]
-        y = y[[label]]
+        jump_period = (period - 0.5) * 2
+        data = data.iloc[[i for i in range(data.index.shape[0]) if i % int(jump_period + 1) == 0]]
+
+        x = data[x_column]
+        y = data[[label]]
         y["y"] = y[label]
         y=y[["y"]]
         df = pd.concat([x, y], axis=1, join="inner")
-
+        df = df.dropna()
         N = df["y"].shape[0]
 
         if y_window > 1:

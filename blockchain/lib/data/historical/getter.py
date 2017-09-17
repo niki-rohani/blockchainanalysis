@@ -18,7 +18,7 @@ class Getter(object):
                 df=self.uncache(market, crypto_name)
                 return df
             except:
-                pass
+                print("unable to find cache data")
 
         df = self._get(market, crypto_name)
         self.cache(df, market, crypto_name)
@@ -31,14 +31,15 @@ class Getter(object):
     def cache(self, df, market, crypto):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         try:
-            pkl.dump(df, open(dir_path+"/cache/"+market or self.market+crypto+".pkl", "wb"))
+            print("saving cache data")
+            pkl.dump(df, open(dir_path+"/cache/"+(market or self.market)+crypto+".pkl", "wb"))
         except:
-            raise Exception("Error on saving " + dir_path+"/cache/"+market or self.market+crypto+".pkl")
+            raise Exception("Error on saving " + dir_path+"/cache/"+(market or self.market)+crypto+".pkl")
 
     def uncache(self, market, crypto):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         try:
-            df=pkl.load(open(dir_path+"cache/"+market or self.market+crypto+".pkl", "rb"))
+            df=pkl.load(open(dir_path+"/cache/"+(market or self.market)+crypto+".pkl", "rb"))
             return df
         except:
             raise Exception("Error on loading " + sys.modules[__name__].__file__+"/cache/"+market
