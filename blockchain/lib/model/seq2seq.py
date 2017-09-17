@@ -1,7 +1,5 @@
 import tensorflow as tf
 from tensorflow.contrib import learn as tflearn
-from tensorflow.contrib.legacy_seq2seq.python.ops import seq2seq
-from tensorflow.contrib.learn.python.learn.ops import losses_ops
 from tensorflow.python.ops import variable_scope
 from blockchain.lib.nn import rnn
 from blockchain.lib.model.base_model import BaseModel
@@ -80,7 +78,6 @@ class Seq2Seq(BaseModel):
                 if mode != tf.contrib.learn.ModeKeys.INFER:
                     for output, Y_ in zip(self.output, y_):
                         predictions = tf.nn.xw_plus_b(output, self.weights, self.bias)
-                        #l_ = tf.losses.mean_squared_error(Y_, predictions)
                         l_ = losses.biased_mean_squared_error(Y_, predictions, self.config["bias_loss"])
                         output_.append(predictions)
                         loss += l_
